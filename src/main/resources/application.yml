@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: tarifit-auth-service
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/tarifittranslator}
+  security:
+    jwt:
+      secret: ${JWT_SECRET:tarifit-jwt-secret-key-2025}
+      expiration: 86400000 # 24 hours
+
+server:
+  port: ${SERVER_PORT:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.tarifit: DEBUG
+    org.springframework.security: DEBUG
