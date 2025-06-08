@@ -1,6 +1,7 @@
 package com.tarifit.auth.controller
 
 import com.tarifit.auth.dto.AuthResponse
+import com.tarifit.auth.dto.ErrorResponse
 import com.tarifit.auth.dto.LoginRequest
 import com.tarifit.auth.dto.RegisterRequest
 import com.tarifit.auth.service.AuthService
@@ -14,17 +15,14 @@ import org.springframework.web.bind.annotation.*
 class AuthController(private val authService: AuthService) {
     
     @PostMapping("/register")
-    fun register(@Valid @RequestBody request: RegisterRequest): ResponseEntity<AuthResponse> {
+    fun register(@Valid @RequestBody request: RegisterRequest): ResponseEntity<Any> {
         return try {
             val response = authService.register(request)
             ResponseEntity.ok(response)
         } catch (e: RuntimeException) {
             ResponseEntity.badRequest().body(
-                AuthResponse(
-                    token = "",
-                    userId = "",
-                    email = "",
-                    username = "",
+                ErrorResponse(
+                    error = "REGISTRATION_FAILED",
                     message = e.message ?: "Registration failed"
                 )
             )
@@ -32,17 +30,14 @@ class AuthController(private val authService: AuthService) {
     }
     
     @PostMapping("/login")
-    fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<AuthResponse> {
+    fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<Any> {
         return try {
             val response = authService.login(request)
             ResponseEntity.ok(response)
         } catch (e: RuntimeException) {
             ResponseEntity.badRequest().body(
-                AuthResponse(
-                    token = "",
-                    userId = "",
-                    email = "",
-                    username = "",
+                ErrorResponse(
+                    error = "LOGIN_FAILED",
                     message = e.message ?: "Login failed"
                 )
             )
