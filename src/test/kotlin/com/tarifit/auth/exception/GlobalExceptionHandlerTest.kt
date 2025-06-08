@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-class ExceptionTest {
+class GlobalExceptionHandlerTest {
 
     @Test
     fun `should create UserNotFoundException with message`() {
