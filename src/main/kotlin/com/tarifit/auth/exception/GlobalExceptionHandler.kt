@@ -22,7 +22,7 @@ class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(
             ErrorResponseDto(
                 error = "USER_ALREADY_EXISTS",
-                message = ex.message,
+                message = ex.message ?: "User already exists",
                 timestamp = Instant.now().toString()
             )
         )
@@ -34,7 +34,7 @@ class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(
             ErrorResponseDto(
                 error = "USER_NOT_FOUND",
-                message = ex.message,
+                message = ex.message ?: "User not found",
                 timestamp = Instant.now().toString()
             )
         )
@@ -58,7 +58,7 @@ class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(
             ErrorResponseDto(
                 error = "TOKEN_VALIDATION_FAILED",
-                message = ex.message,
+                message = ex.message ?: "Token validation failed",
                 timestamp = Instant.now().toString()
             )
         )
