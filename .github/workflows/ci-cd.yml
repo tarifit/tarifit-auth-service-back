@@ -30,6 +30,8 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Run tests
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: mvn clean test
 
       - name: Generate test report
