@@ -4,11 +4,10 @@ import com.tarifit.auth.domain.User
 import com.tarifit.auth.domain.UserRepository
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
-import java.util.Optional
 
 interface MongoUserRepository : MongoRepository<User, String> {
-    fun findByEmail(email: String): Optional<User>
-    fun findByUsername(username: String): Optional<User>
+    fun findByEmail(email: String): User?
+    fun findByUsername(username: String): User?
     fun existsByEmail(email: String): Boolean
     fun existsByUsername(username: String): Boolean
 }
@@ -23,11 +22,11 @@ class MongoDbUserRepository(
     }
     
     override fun findByEmail(email: String): User? {
-        return mongoUserRepository.findByEmail(email).orElse(null)
+        return mongoUserRepository.findByEmail(email)
     }
     
     override fun findByUsername(username: String): User? {
-        return mongoUserRepository.findByUsername(username).orElse(null)
+        return mongoUserRepository.findByUsername(username)
     }
     
     override fun existsByEmail(email: String): Boolean {
