@@ -7,13 +7,14 @@ import com.tarifit.auth.dto.ErrorResponse
 import com.tarifit.auth.dto.LoginRequest
 import com.tarifit.auth.dto.RegisterRequest
 import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.SignatureAlgorithm
+import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.*
+import javax.crypto.SecretKey
 
 @Service
 class AuthService(
@@ -26,6 +27,10 @@ class AuthService(
     
     @Value("\${jwt.expiration:86400}")
     private var jwtExpiration: Long = 86400 // 24 hours in seconds
+    
+    private fun getSigningKey(): SecretKey {
+        return Keys.hmacShaKeyFor(jwtSecret.toByteArray())
+    }
     
     fun handleRegister(request: RegisterRequest): ResponseEntity<Any> {
         return try {
@@ -129,8 +134,9 @@ class AuthService(
     fun validateToken(token: String): Boolean {
         return try {
             Jwts.parser()
-                .setSigningKey(jwtSecret)
-                .parseClaimsJws(token)
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
             true
         } catch (e: Exception) {
             false
@@ -142,10 +148,10 @@ class AuthService(
         val expiry = Date(now.time + jwtExpiration * 1000)
         
         return Jwts.builder()
-            .setSubject(userId)
-            .setIssuedAt(now)
-            .setExpiration(expiry)
-            .signWith(SignatureAlgorithm.HS512, jwtSecret)
+            .subject(userId)
+            .issuedAt(now)
+            .expiration(expiry)
+            .signWith(getSigningKey())
             .compact()
     }
 }
