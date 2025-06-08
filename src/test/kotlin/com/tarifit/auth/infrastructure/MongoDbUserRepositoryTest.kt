@@ -2,126 +2,227 @@ package com.tarifit.auth.infrastructure
 
 import com.tarifit.auth.domain.User
 import org.junit.jupiter.api.Test
-import org.mockito.Mock
-import org.mockito.Mockito.*
-import org.mockito.MockitoAnnotations
+import org.junit.jupiter.api.BeforeEach
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import org.mockito.kotlin.verify
 import java.time.Instant
 import java.util.*
-import kotlin.test.BeforeTest
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class MongoDbUserRepositoryTest {
-    
-    @Mock
+
+    private lateinit var mongoDbUserRepository: MongoDbUserRepository
     private lateinit var mongoUserRepository: MongoUserRepository
-    
-    private lateinit var userRepository: MongoDbUserRepository
-    
-    private val testUser = User(
-        id = "test-id",
-        email = "test@test.com",
-        username = "testuser",
-        passwordHash = "hashedPassword",
-        createdAt = Instant.now(),
-        updatedAt = Instant.now(),
-        isActive = true
-    )
-    
-    @BeforeTest
+
+    @BeforeEach
     fun setUp() {
-        MockitoAnnotations.openMocks(this)
-        userRepository = MongoDbUserRepository(mongoUserRepository)
+        mongoUserRepository = mock()
+        mongoDbUserRepository = MongoDbUserRepository(mongoUserRepository)
     }
-    
+
     @Test
-    fun `save should delegate to mongo repository`() {
-        `when`(mongoUserRepository.save(testUser)).thenReturn(testUser)
-        
-        val result = userRepository.save(testUser)
-        
-        assertEquals(testUser, result)
-        verify(mongoUserRepository).save(testUser)
+    fun `save should delegate to MongoUserRepository`() {
+        // Given
+        val user = User(
+            id = null,
+            email = "test@example.com",
+            username = "testuser",
+            passwordHash = "hashedPassword",
+            createdAt = Instant.now(),
+            updatedAt = Instant.now(),
+            isActive = true
+        )
+
+        val savedUser = user.copy(id = "userId123")
+
+        whenever(mongoUserRepository.save(user)).thenReturn(savedUser)
+
+        // When
+        val result = mongoDbUserRepository.save(user)
+
+        // Then
+        assertEquals(savedUser, result)
+        verify(mongoUserRepository).save(user)
     }
-    
+
     @Test
-    fun `findByEmail should return user when found`() {
-        `when`(mongoUserRepository.findByEmail("test@test.com")).thenReturn(Optional.of(testUser))
-        
-        val result = userRepository.findByEmail("test@test.com")
-        
-        assertEquals(testUser, result)
-        verify(mongoUserRepository).findByEmail("test@test.com")
+    fun `findByEmail should delegate to MongoUserRepository`() {
+        // Given
+        val email = "test@example.com"
+        val user = User(
+            id = "userId123",
+            email = email,
+            username = "testuser",
+            passwordHash = "hashedPassword",
+            createdAt = Instant.now(),
+            updatedAt = Instant.now(),
+            isActive = true
+        )
+
+        whenever(mongoUserRepository.findByEmail(email)).thenReturn(user)
+
+        // When
+        val result = mongoDbUserRepository.findByEmail(email)
+
+        // Then
+        assertEquals(user, result)
+        verify(mongoUserRepository).findByEmail(email)
     }
-    
+
     @Test
-    fun `findByEmail should return null when not found`() {
-        `when`(mongoUserRepository.findByEmail("nonexistent@test.com")).thenReturn(Optional.empty())
-        
-        val result = userRepository.findByEmail("nonexistent@test.com")
-        
+    fun `findByEmail should return null when user not found`() {
+        // Given
+        val email = "nonexistent@example.com"
+
+        whenever(mongoUserRepository.findByEmail(email)).thenReturn(null)
+
+        // When
+        val result = mongoDbUserRepository.findByEmail(email)
+
+        // Then
         assertNull(result)
-        verify(mongoUserRepository).findByEmail("nonexistent@test.com")
+        verify(mongoUserRepository).findByEmail(email)
     }
-    
+
     @Test
-    fun `findByUsername should return user when found`() {
-        `when`(mongoUserRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser))
-        
-        val result = userRepository.findByUsername("testuser")
-        
-        assertEquals(testUser, result)
-        verify(mongoUserRepository).findByUsername("testuser")
+    fun `findByUsername should delegate to MongoUserRepository`() {
+        // Given
+        val username = "testuser"
+        val user = User(
+            id = "userId123",
+            email = "test@example.com",
+            username = username,
+            passwordHash = "hashedPassword",
+            createdAt = Instant.now(),
+            updatedAt = Instant.now(),
+            isActive = true
+        )
+
+        whenever(mongoUserRepository.findByUsername(username)).thenReturn(user)
+
+        // When
+        val result = mongoDbUserRepository.findByUsername(username)
+
+        // Then
+        assertEquals(user, result)
+        verify(mongoUserRepository).findByUsername(username)
     }
-    
+
     @Test
-    fun `findByUsername should return null when not found`() {
-        `when`(mongoUserRepository.findByUsername("nonexistentuser")).thenReturn(Optional.empty())
-        
-        val result = userRepository.findByUsername("nonexistentuser")
-        
+    fun `findByUsername should return null when user not found`() {
+        // Given
+        val username = "nonexistentuser"
+
+        whenever(mongoUserRepository.findByUsername(username)).thenReturn(null)
+
+        // When
+        val result = mongoDbUserRepository.findByUsername(username)
+
+        // Then
         assertNull(result)
-        verify(mongoUserRepository).findByUsername("nonexistentuser")
+        verify(mongoUserRepository).findByUsername(username)
     }
-    
+
     @Test
-    fun `existsByEmail should delegate to mongo repository`() {
-        `when`(mongoUserRepository.existsByEmail("test@test.com")).thenReturn(true)
-        
-        val result = userRepository.existsByEmail("test@test.com")
-        
+    fun `existsByEmail should delegate to MongoUserRepository and return true`() {
+        // Given
+        val email = "test@example.com"
+
+        whenever(mongoUserRepository.existsByEmail(email)).thenReturn(true)
+
+        // When
+        val result = mongoDbUserRepository.existsByEmail(email)
+
+        // Then
         assertTrue(result)
-        verify(mongoUserRepository).existsByEmail("test@test.com")
+        verify(mongoUserRepository).existsByEmail(email)
     }
-    
+
     @Test
-    fun `existsByUsername should delegate to mongo repository`() {
-        `when`(mongoUserRepository.existsByUsername("testuser")).thenReturn(true)
-        
-        val result = userRepository.existsByUsername("testuser")
-        
+    fun `existsByEmail should delegate to MongoUserRepository and return false`() {
+        // Given
+        val email = "nonexistent@example.com"
+
+        whenever(mongoUserRepository.existsByEmail(email)).thenReturn(false)
+
+        // When
+        val result = mongoDbUserRepository.existsByEmail(email)
+
+        // Then
+        assertFalse(result)
+        verify(mongoUserRepository).existsByEmail(email)
+    }
+
+    @Test
+    fun `existsByUsername should delegate to MongoUserRepository and return true`() {
+        // Given
+        val username = "testuser"
+
+        whenever(mongoUserRepository.existsByUsername(username)).thenReturn(true)
+
+        // When
+        val result = mongoDbUserRepository.existsByUsername(username)
+
+        // Then
         assertTrue(result)
-        verify(mongoUserRepository).existsByUsername("testuser")
+        verify(mongoUserRepository).existsByUsername(username)
     }
-    
+
     @Test
-    fun `findById should return user when found`() {
-        `when`(mongoUserRepository.findById("test-id")).thenReturn(Optional.of(testUser))
-        
-        val result = userRepository.findById("test-id")
-        
-        assertEquals(testUser, result)
-        verify(mongoUserRepository).findById("test-id")
+    fun `existsByUsername should delegate to MongoUserRepository and return false`() {
+        // Given
+        val username = "nonexistentuser"
+
+        whenever(mongoUserRepository.existsByUsername(username)).thenReturn(false)
+
+        // When
+        val result = mongoDbUserRepository.existsByUsername(username)
+
+        // Then
+        assertFalse(result)
+        verify(mongoUserRepository).existsByUsername(username)
     }
-    
+
     @Test
-    fun `findById should return null when not found`() {
-        `when`(mongoUserRepository.findById("nonexistent-id")).thenReturn(Optional.empty())
-        
-        val result = userRepository.findById("nonexistent-id")
-        
+    fun `findById should delegate to MongoUserRepository and return user when found`() {
+        // Given
+        val userId = "userId123"
+        val user = User(
+            id = userId,
+            email = "test@example.com",
+            username = "testuser",
+            passwordHash = "hashedPassword",
+            createdAt = Instant.now(),
+            updatedAt = Instant.now(),
+            isActive = true
+        )
+
+        whenever(mongoUserRepository.findById(userId)).thenReturn(Optional.of(user))
+
+        // When
+        val result = mongoDbUserRepository.findById(userId)
+
+        // Then
+        assertEquals(user, result)
+        verify(mongoUserRepository).findById(userId)
+    }
+
+    @Test
+    fun `findById should delegate to MongoUserRepository and return null when not found`() {
+        // Given
+        val userId = "nonexistentId"
+
+        whenever(mongoUserRepository.findById(userId)).thenReturn(Optional.empty())
+
+        // When
+        val result = mongoDbUserRepository.findById(userId)
+
+        // Then
         assertNull(result)
-        verify(mongoUserRepository).findById("nonexistent-id")
+        verify(mongoUserRepository).findById(userId)
     }
 }

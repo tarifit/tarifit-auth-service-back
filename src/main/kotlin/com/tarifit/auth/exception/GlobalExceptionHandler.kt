@@ -5,6 +5,7 @@ import com.tarifit.auth.dto.ErrorResponseDto
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ControllerAdvice
@@ -31,19 +32,13 @@ class GlobalExceptionHandler {
     @ExceptionHandler(UserNotFoundException::class)
     fun handleUserNotFound(ex: UserNotFoundException): ResponseEntity<ErrorResponseDto> {
         logger.warn { "User not found: ${ex.message}" }
-        return ResponseEntity.badRequest().body(
-            ErrorResponseDto(
-                error = "USER_NOT_FOUND",
-                message = ex.message ?: "User not found",
-                timestamp = Instant.now().toString()
-            )
-        )
+        return ResponseEntity.notFound().build()
     }
     
     @ExceptionHandler(InvalidPasswordException::class)
     fun handleInvalidPassword(ex: InvalidPasswordException): ResponseEntity<ErrorResponseDto> {
         logger.warn { "Invalid password attempt" }
-        return ResponseEntity.badRequest().body(
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
             ErrorResponseDto(
                 error = "INVALID_CREDENTIALS",
                 message = ErrorMessages.INVALID_CREDENTIALS.message,
@@ -55,10 +50,22 @@ class GlobalExceptionHandler {
     @ExceptionHandler(TokenValidationException::class)
     fun handleTokenValidation(ex: TokenValidationException): ResponseEntity<ErrorResponseDto> {
         logger.warn { "Token validation failed: ${ex.message}" }
-        return ResponseEntity.badRequest().body(
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
             ErrorResponseDto(
                 error = "TOKEN_VALIDATION_FAILED",
                 message = ex.message ?: "Token validation failed",
+                timestamp = Instant.now().toString()
+            )
+        )
+    }
+    
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleHttpMessageNotReadable(ex: HttpMessageNotReadableException): ResponseEntity<ErrorResponseDto> {
+        logger.warn { "Invalid request body: ${ex.message}" }
+        return ResponseEntity.badRequest().body(
+            ErrorResponseDto(
+                error = "INVALID_REQUEST_BODY",
+                message = "Invalid request body format",
                 timestamp = Instant.now().toString()
             )
         )
