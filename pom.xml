@@ -10,7 +10,7 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <n>Tarifit Auth Service</n>
+    <name>Tarifit Auth Service</name>
     <description>Authentication microservice for Tarifit Translator</description>
 
     <properties>
