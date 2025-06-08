@@ -3,11 +3,17 @@ spring:
     name: tarifit-auth-service
   data:
     mongodb:
-      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/tarifittranslator}
-  security:
-    jwt:
-      secret: ${JWT_SECRET:tarifit-jwt-secret-key-2025}
-      expiration: 86400000 # 24 hours
+      uri: ${MONGODB_URI:mongodb://localhost:27017/tarifit_auth}
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:tarifit-default-secret-key-for-development-only}
+  expiration: ${JWT_EXPIRATION:86400} # 24 hours in seconds
+
+# BCrypt Configuration
+security:
+  bcrypt:
+    rounds: ${BCRYPT_ROUNDS:12}
 
 server:
   port: ${SERVER_PORT:8081}
