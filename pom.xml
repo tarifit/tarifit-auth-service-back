@@ -20,7 +20,7 @@
         <spring-boot.version>3.3.3</spring-boot.version>
         <jjwt.version>0.12.5</jjwt.version>
         <xmlunit.version>2.10.0</xmlunit.version>
-        <logback.version>1.5.13</logback.version>
+
         <json-smart.version>2.5.2</json-smart.version>
     </properties>
 
@@ -33,16 +33,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-core</artifactId>
-                <version>${logback.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>${logback.version}</version>
-            </dependency>
+
             <dependency>
                 <groupId>net.minidev</groupId>
                 <artifactId>json-smart</artifactId>
