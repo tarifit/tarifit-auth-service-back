@@ -9,14 +9,16 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>Tarifit Auth Service</name>
+    <n>Tarifit Auth Service</n>
     <description>Authentication microservice for Tarifit Translator</description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <kotlin.version>1.9.20</kotlin.version>
+        <kotlin.compiler.jvmTarget>17</kotlin.compiler.jvmTarget>
         <spring-boot.version>3.2.6</spring-boot.version>
+        <jackson.version>2.17.0</jackson.version>
         <jjwt.version>0.12.5</jjwt.version>
     </properties>
 
@@ -83,6 +85,7 @@
             <version>${kotlin.version}</version>
         </dependency>
 
+        <!-- Jackson Kotlin Module - Use compatible version with Spring Boot -->
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-kotlin</artifactId>
