@@ -1,3 +1,3 @@
 package com.tarifit.auth.exception
 
-class TokenValidationException(message: String) : AuthException(message)
+data class TokenValidationException(val msg: String) : AuthException(msg)

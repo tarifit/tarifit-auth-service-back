@@ -1,3 +1,3 @@
 package com.tarifit.auth.exception
 
-class UserNotFoundException(message: String) : AuthException(message)
+data class UserNotFoundException(val msg: String) : AuthException(msg)

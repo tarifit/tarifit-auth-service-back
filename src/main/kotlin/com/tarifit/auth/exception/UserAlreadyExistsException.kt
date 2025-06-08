@@ -1,3 +1,3 @@
 package com.tarifit.auth.exception
 
-class UserAlreadyExistsException(message: String) : AuthException(message)
+data class UserAlreadyExistsException(val msg: String) : AuthException(msg)

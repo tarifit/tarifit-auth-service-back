@@ -1,3 +1,3 @@
 package com.tarifit.auth.exception
 
-class InvalidPasswordException(message: String) : AuthException(message)
+data class InvalidPasswordException(val msg: String) : AuthException(msg)
