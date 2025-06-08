@@ -1,6 +1,6 @@
 package com.tarifit.auth.dto
 
-data class ErrorResponse(
+data class ErrorResponseDto(
     val error: String,
     val message: String,
     val timestamp: String

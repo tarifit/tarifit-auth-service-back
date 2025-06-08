@@ -1,15 +1,19 @@
 package com.tarifit.auth.service
 
+import com.tarifit.auth.constants.ErrorMessages
 import com.tarifit.auth.domain.User
 import com.tarifit.auth.domain.UserRepository
-import com.tarifit.auth.dto.AuthResponse
-import com.tarifit.auth.dto.ErrorResponse
-import com.tarifit.auth.dto.LoginRequest
-import com.tarifit.auth.dto.RegisterRequest
+import com.tarifit.auth.dto.AuthResponseDto
+import com.tarifit.auth.dto.LoginDto
+import com.tarifit.auth.dto.RegisterDto
+import com.tarifit.auth.exception.InvalidPasswordException
+import com.tarifit.auth.exception.TokenValidationException
+import com.tarifit.auth.exception.UserAlreadyExistsException
+import com.tarifit.auth.exception.UserNotFoundException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import java.time.Instant
@@ -19,78 +23,33 @@ import javax.crypto.SecretKey
 @Service
 class AuthService(
     private val userRepository: UserRepository,
-    private val passwordEncoder: BCryptPasswordEncoder = BCryptPasswordEncoder()
+    private val passwordEncoder: BCryptPasswordEncoder
 ) {
     
-    @Value("\${jwt.secret:tarifit-secret-key-2024}")
+    private val logger = LoggerFactory.getLogger(AuthService::class.java)
+    
+    @Value("\${jwt.secret}")
     private lateinit var jwtSecret: String
     
-    @Value("\${jwt.expiration:86400}")
+    @Value("\${jwt.expiration}")
     private var jwtExpiration: Long = 86400 // 24 hours in seconds
     
     private fun getSigningKey(): SecretKey {
         return Keys.hmacShaKeyFor(jwtSecret.toByteArray())
     }
     
-    fun handleRegister(request: RegisterRequest): ResponseEntity<Any> {
-        return try {
-            val response = register(request)
-            ResponseEntity.ok(response)
-        } catch (e: RuntimeException) {
-            ResponseEntity.badRequest().body(
-                ErrorResponse(
-                    error = "REGISTRATION_FAILED",
-                    message = e.message ?: "Registration failed",
-                    timestamp = Instant.now().toString()
-                )
-            )
-        }
-    }
-    
-    fun handleLogin(request: LoginRequest): ResponseEntity<Any> {
-        return try {
-            val response = login(request)
-            ResponseEntity.ok(response)
-        } catch (e: RuntimeException) {
-            ResponseEntity.badRequest().body(
-                ErrorResponse(
-                    error = "LOGIN_FAILED", 
-                    message = e.message ?: "Login failed",
-                    timestamp = Instant.now().toString()
-                )
-            )
-        }
-    }
-    
-    fun handleValidate(authorization: String): ResponseEntity<Map<String, Any>> {
-        return try {
-            val token = authorization.removePrefix("Bearer ")
-            val isValid = validateToken(token)
-            
-            ResponseEntity.ok(
-                mapOf(
-                    "valid" to isValid,
-                    "message" to if (isValid) "Token is valid" else "Token is invalid"
-                )
-            )
-        } catch (e: Exception) {
-            ResponseEntity.badRequest().body(
-                mapOf(
-                    "valid" to false,
-                    "message" to "Token validation failed"
-                )
-            )
-        }
-    }
-    
-    private fun register(request: RegisterRequest): AuthResponse {
+    fun register(request: RegisterDto): AuthResponseDto {
+        logger.info("Attempting to register user with email: ${request.email}")
+        
         // Check if user already exists
         if (userRepository.existsByEmail(request.email)) {
-            throw RuntimeException("Email already exists")
+            logger.warn("Registration failed - email already exists: ${request.email}")
+            throw UserAlreadyExistsException(ErrorMessages.EMAIL_ALREADY_EXISTS.message)
         }
         
         if (userRepository.existsByUsername(request.username)) {
-            throw RuntimeException("Username already exists")
+            logger.warn("Registration failed - username already exists: ${request.username}")
+            throw UserAlreadyExistsException(ErrorMessages.USERNAME_ALREADY_EXISTS.message)
         }
         
         // Create new user
@@ -101,57 +60,95 @@ class AuthService(
         )
         
         val savedUser = userRepository.save(user)
-        val token = generateToken(savedUser.id!!)
+        logger.info("User registered successfully with ID: ${savedUser.id}")
         
-        return AuthResponse(
+        val (token, expiresAt) = generateToken(savedUser.id!!)
+        
+        return AuthResponseDto(
             token = token,
-            userId = savedUser.id!!,
+            userId = savedUser.id,
             email = savedUser.email,
             username = savedUser.username,
-            message = "User registered successfully"
+            message = ErrorMessages.USER_REGISTERED_SUCCESSFULLY.message,
+            expiresAt = expiresAt
         )
     }
     
-    private fun login(request: LoginRequest): AuthResponse {
+    fun login(request: LoginDto): AuthResponseDto {
+        logger.info("Attempting to login user with email: ${request.email}")
+        
         val user = userRepository.findByEmail(request.email)
-            .orElseThrow { RuntimeException("Invalid email or password") }
+            ?: run {
+                logger.warn("Login failed - user not found: ${request.email}")
+                throw UserNotFoundException(ErrorMessages.INVALID_CREDENTIALS.message)
+            }
         
         if (!passwordEncoder.matches(request.password, user.passwordHash)) {
-            throw RuntimeException("Invalid email or password")
+            logger.warn("Login failed - invalid password for user: ${request.email}")
+            throw InvalidPasswordException(ErrorMessages.INVALID_CREDENTIALS.message)
         }
         
-        val token = generateToken(user.id!!)
+        if (!user.isActive) {
+            logger.warn("Login failed - user account is inactive: ${request.email}")
+            throw UserNotFoundException("User account is inactive")
+        }
         
-        return AuthResponse(
+        logger.info("User logged in successfully: ${user.id}")
+        val (token, expiresAt) = generateToken(user.id!!)
+        
+        return AuthResponseDto(
             token = token,
-            userId = user.id!!,
+            userId = user.id,
             email = user.email,
             username = user.username,
-            message = "Login successful"
+            message = ErrorMessages.LOGIN_SUCCESSFUL.message,
+            expiresAt = expiresAt
         )
     }
     
     fun validateToken(token: String): Boolean {
         return try {
+            val cleanToken = token.removePrefix("Bearer ").trim()
             Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
-                .parseSignedClaims(token)
+                .parseSignedClaims(cleanToken)
+            
+            logger.debug("Token validation successful")
             true
         } catch (e: Exception) {
+            logger.warn("Token validation failed: ${e.message}")
             false
         }
     }
     
-    private fun generateToken(userId: String): String {
+    fun getUserIdFromToken(token: String): String? {
+        return try {
+            val cleanToken = token.removePrefix("Bearer ").trim()
+            val claims = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(cleanToken)
+                .payload
+            
+            claims.subject
+        } catch (e: Exception) {
+            logger.warn("Failed to extract user ID from token: ${e.message}")
+            null
+        }
+    }
+    
+    private fun generateToken(userId: String): Pair<String, Long> {
         val now = Date()
         val expiry = Date(now.time + jwtExpiration * 1000)
         
-        return Jwts.builder()
+        val token = Jwts.builder()
             .subject(userId)
             .issuedAt(now)
             .expiration(expiry)
             .signWith(getSigningKey())
             .compact()
+        
+        return Pair(token, expiry.time)
     }
 }
