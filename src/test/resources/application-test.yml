@@ -1,7 +1,7 @@
 spring:
   data:
     mongodb:
-      uri: ${MONGODB_TEST_URI:mongodb://localhost:27017/tarifit_auth_test}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/tarifit_auth_test}
 
 jwt:
   secret: ${JWT_SECRET:tarifit-test-secret-key-for-integration-tests-only}
