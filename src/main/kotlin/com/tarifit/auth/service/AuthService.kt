@@ -3,13 +3,16 @@ package com.tarifit.auth.service
 import com.tarifit.auth.domain.User
 import com.tarifit.auth.domain.UserRepository
 import com.tarifit.auth.dto.AuthResponse
+import com.tarifit.auth.dto.ErrorResponse
 import com.tarifit.auth.dto.LoginRequest
 import com.tarifit.auth.dto.RegisterRequest
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
+import java.time.Instant
 import java.util.*
 
 @Service
@@ -24,7 +27,58 @@ class AuthService(
     @Value("\${jwt.expiration:86400}")
     private var jwtExpiration: Long = 86400 // 24 hours in seconds
     
-    fun register(request: RegisterRequest): AuthResponse {
+    fun handleRegister(request: RegisterRequest): ResponseEntity<Any> {
+        return try {
+            val response = register(request)
+            ResponseEntity.ok(response)
+        } catch (e: RuntimeException) {
+            ResponseEntity.badRequest().body(
+                ErrorResponse(
+                    error = "REGISTRATION_FAILED",
+                    message = e.message ?: "Registration failed",
+                    timestamp = Instant.now().toString()
+                )
+            )
+        }
+    }
+    
+    fun handleLogin(request: LoginRequest): ResponseEntity<Any> {
+        return try {
+            val response = login(request)
+            ResponseEntity.ok(response)
+        } catch (e: RuntimeException) {
+            ResponseEntity.badRequest().body(
+                ErrorResponse(
+                    error = "LOGIN_FAILED", 
+                    message = e.message ?: "Login failed",
+                    timestamp = Instant.now().toString()
+                )
+            )
+        }
+    }
+    
+    fun handleValidate(authorization: String): ResponseEntity<Map<String, Any>> {
+        return try {
+            val token = authorization.removePrefix("Bearer ")
+            val isValid = validateToken(token)
+            
+            ResponseEntity.ok(
+                mapOf(
+                    "valid" to isValid,
+                    "message" to if (isValid) "Token is valid" else "Token is invalid"
+                )
+            )
+        } catch (e: Exception) {
+            ResponseEntity.badRequest().body(
+                mapOf(
+                    "valid" to false,
+                    "message" to "Token validation failed"
+                )
+            )
+        }
+    }
+    
+    private fun register(request: RegisterRequest): AuthResponse {
         // Check if user already exists
         if (userRepository.existsByEmail(request.email)) {
             throw RuntimeException("Email already exists")
@@ -53,7 +107,7 @@ class AuthService(
         )
     }
     
-    fun login(request: LoginRequest): AuthResponse {
+    private fun login(request: LoginRequest): AuthResponse {
         val user = userRepository.findByEmail(request.email)
             .orElseThrow { RuntimeException("Invalid email or password") }
         

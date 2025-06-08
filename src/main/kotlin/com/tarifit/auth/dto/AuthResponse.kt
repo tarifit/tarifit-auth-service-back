@@ -5,5 +5,5 @@ data class AuthResponse(
     val userId: String,
     val email: String,
     val username: String,
-    val message: String = "Authentication successful"
+    val message: String
 )
