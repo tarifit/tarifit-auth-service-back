@@ -1,8 +1,8 @@
 package com.tarifit.auth.exception
 
-import com.tarifit.auth.constants.ErrorMessages
+import com.tarifit.auth.enums.ErrorMessages
 import com.tarifit.auth.dto.ErrorResponseDto
-import org.slf4j.LoggerFactory
+import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.FieldError
@@ -14,11 +14,11 @@ import java.time.Instant
 @ControllerAdvice
 class GlobalExceptionHandler {
     
-    private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
+    private val logger = KotlinLogging.logger {}
     
     @ExceptionHandler(UserAlreadyExistsException::class)
     fun handleUserAlreadyExists(ex: UserAlreadyExistsException): ResponseEntity<ErrorResponseDto> {
-        logger.warn("User already exists: ${ex.message}")
+        logger.warn { "User already exists: ${ex.message}" }
         return ResponseEntity.badRequest().body(
             ErrorResponseDto(
                 error = "USER_ALREADY_EXISTS",
@@ -30,7 +30,7 @@ class GlobalExceptionHandler {
     
     @ExceptionHandler(UserNotFoundException::class)
     fun handleUserNotFound(ex: UserNotFoundException): ResponseEntity<ErrorResponseDto> {
-        logger.warn("User not found: ${ex.message}")
+        logger.warn { "User not found: ${ex.message}" }
         return ResponseEntity.badRequest().body(
             ErrorResponseDto(
                 error = "USER_NOT_FOUND",
@@ -42,7 +42,7 @@ class GlobalExceptionHandler {
     
     @ExceptionHandler(InvalidPasswordException::class)
     fun handleInvalidPassword(ex: InvalidPasswordException): ResponseEntity<ErrorResponseDto> {
-        logger.warn("Invalid password attempt")
+        logger.warn { "Invalid password attempt" }
         return ResponseEntity.badRequest().body(
             ErrorResponseDto(
                 error = "INVALID_CREDENTIALS",
@@ -54,7 +54,7 @@ class GlobalExceptionHandler {
     
     @ExceptionHandler(TokenValidationException::class)
     fun handleTokenValidation(ex: TokenValidationException): ResponseEntity<ErrorResponseDto> {
-        logger.warn("Token validation failed: ${ex.message}")
+        logger.warn { "Token validation failed: ${ex.message}" }
         return ResponseEntity.badRequest().body(
             ErrorResponseDto(
                 error = "TOKEN_VALIDATION_FAILED",
@@ -70,7 +70,7 @@ class GlobalExceptionHandler {
             "${error.field}: ${error.defaultMessage}"
         }
         
-        logger.warn("Validation failed: $errors")
+        logger.warn { "Validation failed: $errors" }
         return ResponseEntity.badRequest().body(
             ErrorResponseDto(
                 error = "VALIDATION_FAILED",
@@ -82,7 +82,7 @@ class GlobalExceptionHandler {
     
     @ExceptionHandler(Exception::class)
     fun handleGenericException(ex: Exception): ResponseEntity<ErrorResponseDto> {
-        logger.error("Unexpected error occurred", ex)
+        logger.error(ex) { "Unexpected error occurred" }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
             ErrorResponseDto(
                 error = "INTERNAL_SERVER_ERROR",

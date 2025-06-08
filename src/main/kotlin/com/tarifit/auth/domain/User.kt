@@ -8,7 +8,7 @@ import java.time.Instant
 @Document(collection = "users")
 data class User(
     @Id
-    val id: String? = null,
+    val id: String?,
     
     @Indexed(unique = true)
     val email: String,
@@ -18,9 +18,9 @@ data class User(
     
     val passwordHash: String,
     
-    val createdAt: Instant = Instant.now(),
+    val createdAt: Instant,
     
-    val updatedAt: Instant = Instant.now(),
+    val updatedAt: Instant,
     
-    val isActive: Boolean = true
+    val isActive: Boolean
 )

@@ -85,6 +85,13 @@
             <version>${kotlin.version}</version>
         </dependency>
 
+        <!-- Kotlin Logging -->
+        <dependency>
+            <groupId>io.github.microutils</groupId>
+            <artifactId>kotlin-logging-jvm</artifactId>
+            <version>3.0.5</version>
+        </dependency>
+
         <!-- Jackson Kotlin Module - Use compatible version with Spring Boot -->
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>

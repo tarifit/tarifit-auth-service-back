@@ -1,4 +1,4 @@
-package com.tarifit.auth.constants
+package com.tarifit.auth.enums
 
 enum class ErrorMessages(val message: String) {
     EMAIL_ALREADY_EXISTS("Email already exists"),
