@@ -28,8 +28,7 @@ import org.springframework.web.context.WebApplicationContext
 @TestMethodOrder(OrderAnnotation::class)
 @TestPropertySource(properties = [
     "jwt.secret=tarifit-test-secret-key-for-integration-tests-only", 
-    "jwt.expiration=86400",
-    "spring.data.mongodb.uri=mongodb+srv://lyagoubisaad:sGMzH35sO0x5Dy9l@cluster0.drvkcjo.mongodb.net/tarifittranslator_test?retryWrites=true&w=majority&appName=Cluster0"
+    "jwt.expiration=86400"
 ])
 class AuthServiceIntegrationTest {
 
