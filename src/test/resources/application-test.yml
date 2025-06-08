@@ -1,0 +1,13 @@
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/tarifit_auth_test}
+
+jwt:
+  secret: ${JWT_SECRET:tarifit-test-secret-key-for-integration-tests-only}
+  expiration: ${JWT_EXPIRATION:86400}
+
+logging:
+  level:
+    com.tarifit: DEBUG
+    org.springframework.security: DEBUG
