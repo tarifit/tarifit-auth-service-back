@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository
 
 interface MongoUserRepository : MongoRepository<User, String> {
     fun findByEmail(email: String): User?
-    fun findByUsername(username: String): User?
     fun existsByEmail(email: String): Boolean
     fun existsByUsername(username: String): Boolean
 }
@@ -25,19 +24,11 @@ class MongoDbUserRepository(
         return mongoUserRepository.findByEmail(email)
     }
     
-    override fun findByUsername(username: String): User? {
-        return mongoUserRepository.findByUsername(username)
-    }
-    
     override fun existsByEmail(email: String): Boolean {
         return mongoUserRepository.existsByEmail(email)
     }
     
     override fun existsByUsername(username: String): Boolean {
         return mongoUserRepository.existsByUsername(username)
-    }
-    
-    override fun findById(id: String): User? {
-        return mongoUserRepository.findById(id).orElse(null)
     }
 }

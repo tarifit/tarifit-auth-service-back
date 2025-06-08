@@ -7,7 +7,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.kotlin.verify
 import java.time.Instant
-import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -89,45 +88,6 @@ class MongoDbUserRepositoryTest {
     }
 
     @Test
-    fun `findByUsername should delegate to MongoUserRepository`() {
-        // Given
-        val username = "testuser"
-        val user = User(
-            id = "userId123",
-            email = "test@example.com",
-            username = username,
-            passwordHash = "hashedPassword",
-            createdAt = Instant.now(),
-            updatedAt = Instant.now(),
-            isActive = true
-        )
-
-        whenever(mongoUserRepository.findByUsername(username)).thenReturn(user)
-
-        // When
-        val result = mongoDbUserRepository.findByUsername(username)
-
-        // Then
-        assertEquals(user, result)
-        verify(mongoUserRepository).findByUsername(username)
-    }
-
-    @Test
-    fun `findByUsername should return null when user not found`() {
-        // Given
-        val username = "nonexistentuser"
-
-        whenever(mongoUserRepository.findByUsername(username)).thenReturn(null)
-
-        // When
-        val result = mongoDbUserRepository.findByUsername(username)
-
-        // Then
-        assertNull(result)
-        verify(mongoUserRepository).findByUsername(username)
-    }
-
-    @Test
     fun `existsByEmail should delegate to MongoUserRepository and return true`() {
         // Given
         val email = "test@example.com"
@@ -185,44 +145,5 @@ class MongoDbUserRepositoryTest {
         // Then
         assertFalse(result)
         verify(mongoUserRepository).existsByUsername(username)
-    }
-
-    @Test
-    fun `findById should delegate to MongoUserRepository and return user when found`() {
-        // Given
-        val userId = "userId123"
-        val user = User(
-            id = userId,
-            email = "test@example.com",
-            username = "testuser",
-            passwordHash = "hashedPassword",
-            createdAt = Instant.now(),
-            updatedAt = Instant.now(),
-            isActive = true
-        )
-
-        whenever(mongoUserRepository.findById(userId)).thenReturn(Optional.of(user))
-
-        // When
-        val result = mongoDbUserRepository.findById(userId)
-
-        // Then
-        assertEquals(user, result)
-        verify(mongoUserRepository).findById(userId)
-    }
-
-    @Test
-    fun `findById should delegate to MongoUserRepository and return null when not found`() {
-        // Given
-        val userId = "nonexistentId"
-
-        whenever(mongoUserRepository.findById(userId)).thenReturn(Optional.empty())
-
-        // When
-        val result = mongoDbUserRepository.findById(userId)
-
-        // Then
-        assertNull(result)
-        verify(mongoUserRepository).findById(userId)
     }
 }
