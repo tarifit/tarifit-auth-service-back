@@ -1,0 +1,77 @@
+name: JIRA to GitHub Automation
+
+on:
+  repository_dispatch:
+    types: [jira-status-change]
+
+jobs:
+  create-branch-and-pr:
+    runs-on: ubuntu-latest
+    if: github.event.client_payload.status == 'In Progress' && contains(github.event.client_payload.labels, 'auth-service')
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Extract JIRA issue details
+      id: jira
+      run: |
+        echo "issue_key=${{ github.event.client_payload.issue_key }}" >> $GITHUB_OUTPUT
+        echo "summary=${{ github.event.client_payload.summary }}" >> $GITHUB_OUTPUT
+        echo "description=${{ github.event.client_payload.description }}" >> $GITHUB_OUTPUT
+
+    - name: Create feature branch
+      run: |
+        BRANCH_NAME="feature/${{ steps.jira.outputs.issue_key }}"
+        git checkout -b $BRANCH_NAME
+        git push origin $BRANCH_NAME
+        echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ env.BRANCH_NAME }}
+        title: "${{ steps.jira.outputs.issue_key }}: ${{ steps.jira.outputs.summary }}"
+        body: |
+          ## JIRA Issue: ${{ steps.jira.outputs.issue_key }}
+          
+          **Summary:** ${{ steps.jira.outputs.summary }}
+          
+          ## Implementation Instructions for Claude Code
+          
+          ${{ steps.jira.outputs.description }}
+          
+          ---
+          
+          ### Claude Code Implementation Instructions
+          
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ env.BRANCH_NAME }}
+          
+          **Steps to complete:**
+          1. Switch to branch: ${{ env.BRANCH_NAME }}
+          2. Implement the requirements described above
+          3. Follow all technical specifications and acceptance criteria
+          4. Add appropriate unit tests
+          5. Commit changes with descriptive messages
+          6. Push commits to the branch
+          
+          **Important:** All work must be done in branch ${{ env.BRANCH_NAME }} and pushed to complete the task.
+          
+          **JIRA:** https://lyagoubisaad.atlassian.net/browse/${{ steps.jira.outputs.issue_key }}
+        draft: false
+        delete-branch: false
+
+    - name: Add comment to JIRA
+      run: |
+        curl -X POST \
+          -H "Authorization: Basic ${{ secrets.JIRA_AUTH }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "body": "GitHub branch and PR created:\n- Branch: `${{ env.BRANCH_NAME }}`\n- PR: ${{ github.server_url }}/${{ github.repository }}/pull/${{ env.PR_NUMBER }}"
+          }' \
+          "https://lyagoubisaad.atlassian.net/rest/api/2/issue/${{ steps.jira.outputs.issue_key }}/comment"
