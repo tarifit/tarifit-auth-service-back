@@ -12,6 +12,23 @@ jobs:
           token: ${{ secrets.PERSONAL_TOKEN }}
           fetch-depth: 0
       
+      - name: Debug - Log Jira Payload
+        run: |
+          echo "=== FULL GITHUB EVENT ==="
+          echo '${{ toJson(github.event) }}'
+          echo ""
+          echo "=== CLIENT PAYLOAD ONLY ==="
+          echo '${{ toJson(github.event.client_payload) }}'
+          echo ""
+          echo "=== INDIVIDUAL FIELDS ==="
+          echo "Event Type: ${{ github.event.action }}"
+          echo "Branch Name: ${{ github.event.client_payload.branch_name }}"
+          echo "Summary: ${{ github.event.client_payload.summary }}"
+          echo "Description: ${{ github.event.client_payload.description }}"
+          echo "Issue Key: ${{ github.event.client_payload.issue_key }}"
+          echo "Assignee: ${{ github.event.client_payload.assignee }}"
+          echo "Jira URL: ${{ github.event.client_payload.jira_url }}"
+          
       - name: Create Pull Request
         run: |
           # Create PR body with Jira information
