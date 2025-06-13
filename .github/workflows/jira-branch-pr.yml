@@ -14,40 +14,42 @@ jobs:
       
       - name: Create Pull Request
         run: |
-          # Extract all Jira data from payload
-          JIRA_DATA=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r 'to_entries | map("\(.key): \(.value)") | join("\n")')
+          # Create PR body with Jira information
+          cat > pr_body.md << 'EOF'
+          ## Jira Ticket Information
           
-          # Create PR body with all Jira information
-          PR_BODY="## Jira Ticket Information
-
-          $JIRA_DATA
-
+          **Branch:** ${{ github.event.client_payload.branch_name }}
+          **Summary:** ${{ github.event.client_payload.summary }}
+          **Description:** ${{ github.event.client_payload.description }}
+          **Assignee:** ${{ github.event.client_payload.assignee }}
+          **Issue Key:** ${{ github.event.client_payload.issue_key }}
+          **Jira URL:** ${{ github.event.client_payload.jira_url }}
+          
           ---
-
+          
           ### Implementation Instructions
-
-          **Branch:** ${{ github.event.client_payload.branch_name || 'branch-from-jira' }}
-
+          
           **Steps to complete:**
-          1. Switch to branch: ${{ github.event.client_payload.branch_name || 'branch-from-jira' }}
+          1. Switch to branch: ${{ github.event.client_payload.branch_name }}
           2. Implement the requirements described above
           3. Follow technical specifications and acceptance criteria
           4. Add appropriate unit tests
           5. Commit changes with descriptive messages
           6. Push commits to this branch
-
-          **Jira Link:** ${{ github.event.client_payload.jira_url || 'N/A' }}"
+          EOF
           
-          # Create PR
+          # Create PR using jq for proper JSON escaping
+          jq -n \
+            --arg title "${{ github.event.client_payload.summary || github.event.client_payload.branch_name || 'Jira Task' }}" \
+            --arg body "$(cat pr_body.md)" \
+            --arg head "${{ github.event.client_payload.branch_name }}" \
+            --arg base "master" \
+            '{title: $title, body: $body, head: $head, base: $base}' | \
           curl -X POST \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github.v3+json" \
-            -d "{
-              \"title\": \"${{ github.event.client_payload.summary || github.event.client_payload.branch_name || 'Jira Task' }}\",
-              \"body\": \"${PR_BODY}\",
-              \"head\": \"${{ github.event.client_payload.branch_name || 'branch-from-jira' }}\",
-              \"base\": \"master\"
-            }" \
+            -H "Content-Type: application/json" \
+            -d @- \
             "https://api.github.com/repos/${{ github.repository }}/pulls"
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
