@@ -1,0 +1,53 @@
+name: Create PR from Jira Branch
+on:
+  repository_dispatch:
+    types: [create-branch]
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PERSONAL_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Create Pull Request
+        run: |
+          # Extract all Jira data from payload
+          JIRA_DATA=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r 'to_entries | map("\(.key): \(.value)") | join("\n")')
+          
+          # Create PR body with all Jira information
+          PR_BODY="## Jira Ticket Information
+
+          $JIRA_DATA
+
+          ---
+
+          ### Implementation Instructions
+
+          **Branch:** ${{ github.event.client_payload.branch_name || 'branch-from-jira' }}
+
+          **Steps to complete:**
+          1. Switch to branch: ${{ github.event.client_payload.branch_name || 'branch-from-jira' }}
+          2. Implement the requirements described above
+          3. Follow technical specifications and acceptance criteria
+          4. Add appropriate unit tests
+          5. Commit changes with descriptive messages
+          6. Push commits to this branch
+
+          **Jira Link:** ${{ github.event.client_payload.jira_url || 'N/A' }}"
+          
+          # Create PR
+          curl -X POST \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d "{
+              \"title\": \"${{ github.event.client_payload.summary || github.event.client_payload.branch_name || 'Jira Task' }}\",
+              \"body\": \"${PR_BODY}\",
+              \"head\": \"${{ github.event.client_payload.branch_name || 'branch-from-jira' }}\",
+              \"base\": \"master\"
+            }" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls"
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
