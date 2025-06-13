@@ -7,7 +7,10 @@ on:
 jobs:
   create-branch-and-pr:
     runs-on: ubuntu-latest
-    if: github.event.client_payload.status == 'In Progress' && contains(github.event.client_payload.labels, 'auth-service')
+    if: >
+      (github.event.client_payload.issue.fields.status.name == 'In Progress' || 
+       github.event.client_payload.webhookEvent == 'jira:issue_updated') &&
+      contains(github.event.client_payload.issue.fields.labels.*.name, 'auth-service')
     
     steps:
     - name: Checkout repository
@@ -19,28 +22,50 @@ jobs:
     - name: Extract JIRA issue details
       id: jira
       run: |
-        echo "issue_key=${{ github.event.client_payload.issue_key }}" >> $GITHUB_OUTPUT
-        echo "summary=${{ github.event.client_payload.summary }}" >> $GITHUB_OUTPUT
-        echo "description=${{ github.event.client_payload.description }}" >> $GITHUB_OUTPUT
-        echo "BRANCH_NAME=feature/${{ github.event.client_payload.issue_key }}" >> $GITHUB_ENV
+        echo "issue_key=${{ github.event.client_payload.issue.key }}" >> $GITHUB_OUTPUT
+        echo "summary=${{ github.event.client_payload.issue.fields.summary }}" >> $GITHUB_OUTPUT
+        echo "description=${{ github.event.client_payload.issue.fields.description }}" >> $GITHUB_OUTPUT
+        echo "status=${{ github.event.client_payload.issue.fields.status.name }}" >> $GITHUB_OUTPUT
+        echo "BRANCH_NAME=feature/${{ github.event.client_payload.issue.key }}" >> $GITHUB_ENV
+
+    - name: Check status transition to In Progress
+      if: steps.jira.outputs.status == 'In Progress'
+      run: echo "Issue moved to In Progress - proceeding with branch creation"
 
     - name: Create feature branch
+      if: steps.jira.outputs.status == 'In Progress'
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
-        git checkout -b ${{ env.BRANCH_NAME }}
         
-        # Create empty commit to initialize branch
+        # Check if branch already exists
+        if git ls-remote --heads origin ${{ env.BRANCH_NAME }} | grep -q ${{ env.BRANCH_NAME }}; then
+          echo "Branch ${{ env.BRANCH_NAME }} already exists"
+          exit 0
+        fi
+        
+        git checkout -b ${{ env.BRANCH_NAME }}
         git commit --allow-empty -m "Initialize feature branch for ${{ steps.jira.outputs.issue_key }}"
         git push origin ${{ env.BRANCH_NAME }}
 
     - name: Create Pull Request
+      if: steps.jira.outputs.status == 'In Progress'
       id: create-pr
       run: |
+        # Check if PR already exists
+        EXISTING_PR=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/pulls?head=tarifit:${{ env.BRANCH_NAME }}&state=open" | jq length)
+        
+        if [ "$EXISTING_PR" -gt 0 ]; then
+          echo "PR already exists for branch ${{ env.BRANCH_NAME }}"
+          exit 0
+        fi
+        
         PR_BODY=$(cat << 'EOF'
         ## JIRA Issue: ${{ steps.jira.outputs.issue_key }}
         
         **Summary:** ${{ steps.jira.outputs.summary }}
+        **Status:** ${{ steps.jira.outputs.status }}
         
         ## Implementation Instructions for Claude Code
         
@@ -67,7 +92,6 @@ jobs:
         EOF
         )
         
-        # Create PR using GitHub API
         RESPONSE=$(curl -s -X POST \
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "Accept: application/vnd.github.v3+json" \
@@ -88,6 +112,7 @@ jobs:
         echo "Created PR #$PR_NUMBER: $PR_URL"
 
     - name: Add comment to JIRA
+      if: steps.jira.outputs.status == 'In Progress' && env.PR_URL != ''
       run: |
         curl -X POST \
           -H "Authorization: Basic ${{ secrets.JIRA_AUTH }}" \
