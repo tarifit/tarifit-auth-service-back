@@ -16,7 +16,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.PERSONAL_TOKEN }}
         fetch-depth: 0
 
     - name: Extract JIRA issue details
@@ -53,7 +53,7 @@ jobs:
       id: create-pr
       run: |
         # Check if PR already exists
-        EXISTING_PR=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+        EXISTING_PR=$(curl -s -H "Authorization: Bearer ${{ secrets.PERSONAL_TOKEN }}" \
           "https://api.github.com/repos/${{ github.repository }}/pulls?head=tarifit:${{ env.BRANCH_NAME }}&state=open" | jq length)
         
         if [ "$EXISTING_PR" -gt 0 ]; then
@@ -93,7 +93,7 @@ jobs:
         )
         
         RESPONSE=$(curl -s -X POST \
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Authorization: Bearer ${{ secrets.PERSONAL_TOKEN }}" \
           -H "Accept: application/vnd.github.v3+json" \
           -d "{
             \"title\": \"${{ steps.jira.outputs.issue_key }}: ${{ steps.jira.outputs.summary }}\",
